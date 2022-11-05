@@ -18,4 +18,5 @@ install-deps:
 	OpenZeppelin/openzeppelin-contracts-upgradeable \
 	ensdomains/ens \
 	ensdomains/ens-contracts \
+	ethereum-optimism/optimism \
 	--no-commit
