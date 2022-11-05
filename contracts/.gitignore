@@ -1,0 +1,8 @@
+cache/
+out/
+
+.env
+*.txt
+
+.idea
+.vscode
