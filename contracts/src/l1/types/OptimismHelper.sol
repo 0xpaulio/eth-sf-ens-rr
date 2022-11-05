@@ -49,9 +49,7 @@ contract OptimismHelper is Lib_AddressResolver {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev Constructs a Helper contract for verifying and interfacing with data stored on the optimism L2.
-    constructor(address _ovmAddressManager) 
-        Lib_AddressResolver(_ovmAddressManager) 
-        { }
+    constructor(address _ovmAddressManager) Lib_AddressResolver(_ovmAddressManager) {}
 
     /*//////////////////////////////////////////////////////////////
                       INTERNAL HELPER FUNCTIONS
