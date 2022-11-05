@@ -1165,7 +1165,14 @@ func (g *Gateway) getGateway(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	}
 	log.Printf("decoded: %+v", decoded...)
-	// g.l2GethClient.GetProof()
+	blockNum, err := g.l2EthClient.BlockNumber(r.Context())
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+	res, err := g.l2GethClient.GetProof(r.Context(), g.l2ResolverAddress, keys, blockNum)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
 	w.Write([]byte(fmt.Sprintf("decoded: %+v", decoded)))
 }
 
