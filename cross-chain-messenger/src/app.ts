@@ -17,26 +17,26 @@ const port = 41235;
 const l1_provider = new ethers.providers.JsonRpcProvider(process.env.L1_RPC_URL)
 const l2_provider = new ethers.providers.JsonRpcProvider(process.env.L2_RPC_URL)
 
-// const crossChainMessenger = new optimismSDK.CrossChainMessenger({
-//     l1ChainId: 31337,
-//     l2ChainId: 17,
-//     l1SignerOrProvider: l1_provider,
-//     l2SignerOrProvider: l2_provider
-// })
+const crossChainMessenger = new optimismSDK.CrossChainMessenger({
+    l1ChainId: 31337,
+    l2ChainId: 17,
+    l1SignerOrProvider: l1_provider,
+    l2SignerOrProvider: l2_provider
+})
 
-// app.post('/storage_proof', async (req, res) => {
-//   console.log(req.body);
-//   try {
-//     let storageProof = await crossChainMessenger.getStorageProof(req.body["resolver_addr"], req.body["addr_slot"], {
-//       blockTag:'latest'
-//     });
-//     res.json({"data": storageProof});
-//   } catch(e) {
-//     console.log("getStorageProof", e)
-//     res.status(400);
-//     res.send('getStorageProof failed');
-//   }
-// });
+app.post('/storage_proof', async (req, res) => {
+  console.log(req.body);
+  try {
+    let storageProof = await crossChainMessenger.getStorageProof(req.body["resolver_addr"], req.body["addr_slot"], {
+      blockTag:'latest'
+    });
+    res.json(storageProof);
+  } catch(e) {
+    console.log("getStorageProof", e)
+    res.status(400);
+    res.send('getStorageProof failed');
+  }
+});
 
 const ADDRESS_MANAGER_ADDRESS = '0xa6f73589243a6A7a9023b1Fa0651b1d89c177111';
 
@@ -105,45 +105,45 @@ async function getLatestStateBatchHeader(): Promise<{batch: StateRootBatchHeader
     throw Error("No state root batches found");
 }
 
-app.post('/storage_proof', async (req, res) => {
-  const stateBatchHeader = await getLatestStateBatchHeader();
-  // The l2 block number we'll use is the last one in the state batch
-  const l2BlockNumber = stateBatchHeader.batch.prevTotalElements.add(stateBatchHeader.batch.batchSize);
-
-  // Construct a merkle proof for the state root we need
-  const elements = []
-  for (
-    let i = 0;
-    i < Math.pow(2, Math.ceil(Math.log2(stateBatchHeader.stateRoots.length)));
-    i++
-  ) {
-    if (i < stateBatchHeader.stateRoots.length) {
-      elements.push(stateBatchHeader.stateRoots[i])
-    } else {
-      elements.push(ethers.utils.keccak256('0x' + '00'.repeat(32)))
-    }
-  }
-  const hash = (el: Buffer | string): Buffer => {
-    return Buffer.from(ethers.utils.keccak256(el).slice(2), 'hex')
-  }
-  const leaves = elements.map((element) => {
-    return Buffer.from(element.slice(2), 'hex')
-  })
-  const index = elements.length - 1;
-  const tree = new MerkleTree(leaves, hash)
-  const treeProof = tree.getProof(leaves[index], index).map((element) => {
-    return element.data
-  });
-  const data = {
-        stateRoot: stateBatchHeader.stateRoots[index],
-        stateRootBatchHeader: stateBatchHeader.batch,
-        stateRootProof: {
-            index,
-            siblings: treeProof,
-        },
-  };
-  res.json(data);
-})
+// app.post('/storage_proof', async (req, res) => {
+//   const stateBatchHeader = await getLatestStateBatchHeader();
+//   // The l2 block number we'll use is the last one in the state batch
+//   const l2BlockNumber = stateBatchHeader.batch.prevTotalElements.add(stateBatchHeader.batch.batchSize);
+//
+//   // Construct a merkle proof for the state root we need
+//   const elements = []
+//   for (
+//     let i = 0;
+//     i < Math.pow(2, Math.ceil(Math.log2(stateBatchHeader.stateRoots.length)));
+//     i++
+//   ) {
+//     if (i < stateBatchHeader.stateRoots.length) {
+//       elements.push(stateBatchHeader.stateRoots[i])
+//     } else {
+//       elements.push(ethers.utils.keccak256('0x' + '00'.repeat(32)))
+//     }
+//   }
+//   const hash = (el: Buffer | string): Buffer => {
+//     return Buffer.from(ethers.utils.keccak256(el).slice(2), 'hex')
+//   }
+//   const leaves = elements.map((element) => {
+//     return Buffer.from(element.slice(2), 'hex')
+//   })
+//   const index = elements.length - 1;
+//   const tree = new MerkleTree(leaves, hash)
+//   const treeProof = tree.getProof(leaves[index], index).map((element) => {
+//     return element.data
+//   });
+//   const data = {
+//         stateRoot: stateBatchHeader.stateRoots[index],
+//         stateRootBatchHeader: stateBatchHeader.batch,
+//         stateRootProof: {
+//             index,
+//             siblings: treeProof,
+//         },
+//   };
+//   res.json(data);
+// })
 
 app.listen(port, () => {
   return console.log(`Express is listening at http://localhost:${port}`);
