@@ -242,10 +242,26 @@ func (g *Gateway) getGateway(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("stateRootProof: %+v", stateRootProof)
 
-	w.Write(body)
+	stateRootProofBytes, err := encodeProof(stateRootProof)
+	if err != nil {
+		fmt.Printf("unmarshaling stateRootProof body: %s", err)
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+
+	respBytes, err := json.Marshal(
+		GatewayResponse{
+			Data: fmt.Sprintf("0x%s", hex.EncodeToString(stateRootProofBytes)),
+		},
+	)
+	if err != nil {
+		fmt.Printf("unmarshaling stateRootProof body: %s", err)
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+
+	w.Write(respBytes)
 }
 
-func encodeProof(proofObj StateRootProof) (resp []byte, err error) {
+func encodeProof(proofObj *StateRootProof) (resp []byte, err error) {
 	var enc = mustParseABI(stateProof)
 	return enc.Methods["helper"].Inputs.Pack(proofObj)
 }
