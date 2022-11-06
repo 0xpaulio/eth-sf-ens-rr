@@ -18,7 +18,7 @@ contract ContractScript is Script {
 
     function setUp() public {
         _gatewayUrls = new string[](1);
-        _gatewayUrls[0] = "http://localhost:3000/gateway/{sender}/{data}.json";
+        _gatewayUrls[0] = "http://localhost:41234/gateway/{sender}/{data}.json";
     }
 
     function run() public {

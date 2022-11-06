@@ -65,5 +65,9 @@ contract ContractScript is Script {
             _goerliENSResolver,
             64
         );
+
+        l2Registry.owner(_paulioRoot);
+        l2Registry.resolver(_paulioRoot);
+        l2Registry.ttl(_paulioRoot);
     }
 }

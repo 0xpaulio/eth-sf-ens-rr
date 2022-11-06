@@ -1,5 +1,153 @@
 .App {
   text-align: center;
+
+  display: flex;
+  flex-direction: column;
+
+  min-height: 100vh;
+
+  align-items: center;
+  justify-content: space-between;
+}
+
+.Header {
+  display: flex;
+  flex-direction: row;
+
+  align-items: center;
+  justify-content: center;
+
+  height: 6rem;
+  width: 100%;
+
+  border-bottom: #282c34 .2rem solid;
+
+  background-color: #61dafb;
+
+  color: #282c34;
+}
+
+.Header h1 {
+  /*background-image: linear-gradient(to left, violet, indigo, blue, green, yellow, orange, red);*/
+  /*-webkit-background-clip: text;*/
+  /*color: transparent;*/
+}
+
+.Body {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+}
+
+.connect-wallet {
+  position: absolute;
+  justify-self: flex-end;
+  /*margin-right: 2rem;*/
+  right: 2rem;
+}
+
+.button {
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  width: 10rem;
+  height: 3rem;
+
+  border: #282c34 .2rem solid;
+  border-radius: 6px;
+  background-color: aliceblue;
+
+  margin: .5rem 0;
+}
+
+.button:hover {
+  cursor: pointer;
+  box-shadow: #282c34 0px 0px .4rem ;
+}
+
+.connect-wallet.disabled:hover {
+  cursor: unset;
+  box-shadow: unset;
+}
+
+.Footer {
+  height: 6rem;
+  width: 100%;
+
+  border-top: #282c34 .2rem solid;
+
+  background-color: #61dafb;
+
+  color: #282c34;
+}
+
+.modal-box {
+  position: absolute;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+
+  background-color: rgba(0, 0, 0, .25);
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.left-align {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.modal-container {
+  padding: 4rem;
+
+  border: #282c34 .2rem solid;
+  border-radius: 6px;
+  background-color: aliceblue;
+
+  max-width: 80%;
+}
+
+.modal-container h2 {
+  margin: 0;
+  text-wrap: normal;
+}
+
+p.data {
+  font-weight: normal;
+  margin: 1rem;
+}
+
+.center {
+  margin: 2rem auto 0;
+}
+
+.spin {
+  animation: 1.5s linear infinite spinner;
+  animation-play-state: inherit;
+  border: solid .3rem aliceblue;
+  border-bottom-color: #1c87c9;
+  border-radius: 50%;
+  content: "";
+  height: 20px;
+  width: 20px;
+  will-change: transform;
 }
 
 .App-logo {
@@ -8,8 +156,8 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+  .spin {
+    animation: App-logo-spin infinite 1.5s linear;
   }
 }
 
