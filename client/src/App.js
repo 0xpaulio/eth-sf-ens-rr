@@ -3,10 +3,11 @@ import './App.css';
 import {useState} from "react";
 
 import {ethers} from "ethers";
-import {CONTRACT_ABI, L1_REGISTRY_CONTRACT_ADDRESS} from "./contract";
+import {CONTRACT_ABI, L1_REGISTRY_CONTRACT_ADDRESS, L2_REGISTRY_CONTRACT_ADDRESS} from "./contract";
 
 function App() {
     const [connectedAccount, setConnectedAccount] = useState("");
+    const [newResAddr, setNewResAddr] = useState("");
 
     const nullModal = {open: false, functionSelectorName: "", response: ""}
     const [modal, setModal] = useState(nullModal);
@@ -31,12 +32,45 @@ function App() {
         }
     }
 
-    const createRegistryContract = (ethereum) => {
+    const createRegistryContract = async (ethereum) => {
+        const provider = new ethers.providers.Web3Provider(ethereum)
+        const signer = provider.getSigner();
+        const network = await provider.send("eth_chainId");
+
+        let addr = ""
+        if (network == "0x5") addr = L1_REGISTRY_CONTRACT_ADDRESS
+        if (network == "0x1a4") addr = L2_REGISTRY_CONTRACT_ADDRESS
         return new ethers.Contract(
-            L1_REGISTRY_CONTRACT_ADDRESS,
+            addr,
             CONTRACT_ABI,
-            (new ethers.providers.Web3Provider(ethereum))
+            signer
         );
+    }
+
+    const switchChain = async (ethereum, network) => {
+        await ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{chainId: network}],
+        });
+    }
+
+    const switchToOtherChain = async (nop) => {
+        const {ethereum} = window;
+
+        if (ethereum) {
+            console.log("switching chain")
+            const provider = new ethers.providers.Web3Provider(ethereum)
+            const curNetwork = await provider.send("eth_chainId");
+
+            console.log("chain", curNetwork)
+            let newChain = ""
+            if (curNetwork == "0x5") newChain = "0x1a4"
+            if (curNetwork == "0x1a4") newChain = "0x5"
+            await ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{chainId: newChain}],
+            });
+        }
     }
 
     const getOwner = async (ensName) => {
@@ -47,7 +81,7 @@ function App() {
                 setLoading("Owner")
 
                 // Initialize the registry contract connection
-                const registry = createRegistryContract(ethereum);
+                const registry = await createRegistryContract(ethereum);
 
                 // Generate the nameHash for the corresponding ENS name
                 const node = ethers.utils.namehash(ensName);
@@ -78,7 +112,7 @@ function App() {
                 setLoading("Resolver")
 
                 // Initialize the registry contract connection
-                const registry = createRegistryContract(ethereum);
+                const registry = await createRegistryContract(ethereum);
 
                 // Generate the nameHash for the corresponding ENS name
                 const node = ethers.utils.namehash(ensName);
@@ -108,7 +142,7 @@ function App() {
                 setLoading("TTL")
 
                 // Initialize the registry contract connection
-                const registry = createRegistryContract(ethereum);
+                const registry = await createRegistryContract(ethereum);
 
                 // Generate the nameHash for the corresponding ENS name
                 const node = ethers.utils.namehash(ensName);
@@ -129,6 +163,54 @@ function App() {
             handleError(err)
         }
     }
+
+    const setResolver = async (newResolverAddr) => {
+        try {
+            const {ethereum} = window;
+
+            if (ethereum) {
+                setLoading("SetResolver")
+
+                // Initialize the registry contract connection
+                let registry = await createRegistryContract(ethereum);
+
+                // Generate the nameHash for the corresponding ENS name
+                const node = ethers.utils.namehash(ensName);
+
+                try {
+                    // Query the L1 Registry contract & catch the CCWP
+                    const tx = await registry.setResolver(node, newResolverAddr)
+                    const resp = tx.wait()
+
+                    console.log(resp)
+                    return
+                    // Note: Not going to get here
+                } catch (e) {
+                    console.log(e)
+                }
+
+                console.log("L1 Write deferred to L2")
+                await switchChain(ethereum, "0x1a4")
+
+                registry = await createRegistryContract(ethereum);
+
+                // Query the L1 Registry contract & catch the CCWP
+                await registry.setResolver(node, newResolverAddr)
+                setModal(
+                    {
+                        open: true,
+                        functionSelectorName: "Updated Resolver",
+                        response: newResolverAddr
+                    }
+                )
+                setLoading("")
+
+            }
+        } catch (err) {
+            handleError(err)
+        }
+    }
+
     const handleError = (err) => {
         console.log("Handling error")
         console.log(err);
@@ -206,9 +288,32 @@ function App() {
             {/* Body */}
             <div className="Body">
                 <h2>Cross Chain Accessor Functions:</h2>
+                {loadingButton("Switch Chain", switchToOtherChain)}
                 {loadingButton("Owner", getOwner)}
                 {loadingButton("Resolver", getResolver)}
                 {loadingButton("TTL", getTTL)}
+
+                <div>
+
+                    <input
+                        value={newResAddr}
+                        onChange={(e) => setNewResAddr(e.target.value)}
+                    />
+
+                    {
+                        loading === "SetResolver" ?
+                            <div className="button">
+                                <div className="spin"/>
+                            </div>
+                            :
+                            <div
+                                className="button"
+                                onClick={() => setResolver(newResAddr)}
+                            >
+                                Get "SetResolver"
+                            </div>
+                    }
+                </div>
             </div>
 
             {/* Footer */}
