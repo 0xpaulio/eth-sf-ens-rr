@@ -7,6 +7,87 @@ import (
 	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
 )
 
+const stateProof = `
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "batchIndex",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "batchRoot",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "batchSize",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "prevTotalElements",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "extraData",
+                  "type": "bytes"
+                }
+              ],
+              "internalType": "struct Lib_OVMCodec.ChainBatchHeader",
+              "name": "stateRootBatchHeader",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "siblings",
+                  "type": "bytes32[]"
+                }
+              ],
+              "internalType": "struct Lib_OVMCodec.ChainInclusionProof",
+              "name": "stateRootProof",
+              "type": "tuple"
+            },
+            {
+              "internalType": "bytes",
+              "name": "stateTrieWitness",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "storageTrieWitness",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct OptimismHelper.L2StateProof",
+          "name": "_proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "helper",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }`
+
 var abiJSON string = `
 [
     {

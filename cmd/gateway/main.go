@@ -96,6 +96,8 @@ type StateRootProof struct {
 			Data []byte `json:"data"`
 		} `json:"siblings"`
 	} `json:"stateRootProof"`
+	StateTrieWitness   []byte `json:"stateTrieWitness"`
+	StorageTrieWitness []byte `json:"storageTrieWitness"`
 }
 
 func main() {
@@ -243,12 +245,13 @@ func (g *Gateway) getGateway(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-func encodeResponse() (resp []byte, err error) {
-	resp, err = abi.Methods["ownerWithProof"].Inputs.Pack()
-	if err != nil {
-		return
-	}
+func encodeProof(proofObj StateRootProof) (resp []byte, err error) {
+	var enc = mustParseABI(stateProof)
+	return enc.Methods["helper"].Inputs.Pack(proofObj)
+}
 
+func encodeResp(proof, extraData []byte) (resp []byte, err error) {
+	return abi.Methods["ownerWithProof"].Inputs.Pack(proof, extraData)
 }
 
 // calldata

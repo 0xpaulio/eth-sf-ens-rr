@@ -238,7 +238,7 @@ contract L1ENSRegistry is
         // Validate the state proof
         if (!verifyStateRootProof(_proof))
             revert InvalidStateRoot();
-            
+
         // Calculate the SLO of the corresponding Perm
         bytes32 slot_ = keccak256(
             abi.encodePacked(
