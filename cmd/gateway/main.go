@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethclient/gethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
 )
@@ -171,6 +170,14 @@ func (g *Gateway) getGateway(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("getProof result: %+v", res)
 	w.Write([]byte(fmt.Sprintf("decoded: %+v", decoded)))
+}
+
+func encodeResponse() (resp []byte, err error) {
+	resp, err = abi.Methods["ownerWithProof"].Inputs.Pack()
+	if err != nil {
+		return
+	}
+
 }
 
 // calldata
