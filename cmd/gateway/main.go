@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math/big"
 	"net/http"
@@ -54,6 +57,48 @@ type Gateway struct {
 	selectors         map[[4]byte]string
 }
 
+type GatewayResponse struct {
+	Data string `json:"data"`
+}
+
+type GatewayResponseData struct {
+	StateRootProof
+	StateTrieWitness   string
+	StorageTrieWitness string
+}
+
+type StateRootProofInput struct {
+	ResolverAddr string `json:"resolver_addr"`
+	AddrSlot     string `json:"addr_slot"`
+}
+
+type StateRootProof struct {
+	StateRoot            string `json:"stateRoot"`
+	StateRootBatchHeader struct {
+		BatchIndex struct {
+			Type string `json:"type"`
+			Hex  string `json:"hex"`
+		} `json:"batchIndex"`
+		BatchRoot string `json:"batchRoot"`
+		BatchSize struct {
+			Type string `json:"type"`
+			Hex  string `json:"hex"`
+		} `json:"batchSize"`
+		PrevTotalElements struct {
+			Type string `json:"type"`
+			Hex  string `json:"hex"`
+		} `json:"prevTotalElements"`
+		ExtraData string `json:"extraData"`
+	} `json:"stateRootBatchHeader"`
+	StateRootProof struct {
+		Index    int `json:"index"`
+		Siblings []struct {
+			Type string `json:"type"`
+			Data []byte `json:"data"`
+		} `json:"siblings"`
+	} `json:"stateRootProof"`
+}
+
 func main() {
 	l2RPCURL := GetOrDefault("L2_RPC_URL", "https://goerli.optimism.io")
 	l2RPCClient, err := rpc.Dial(l2RPCURL)
@@ -68,7 +113,7 @@ func main() {
 	gateway := Gateway{
 		l2GethClient:      gethclient.New(l2RPCClient),
 		l2EthClient:       ethclient.NewClient(l2RPCClient),
-		l2ResolverAddress: common.HexToAddress(GetOrDefault("L2_RESOLVER_ADDR", "0xbeefbabe")),
+		l2ResolverAddress: common.HexToAddress(GetOrDefault("L2_RESOLVER_ADDR", "0xE933897412cc2164331e542B2a2Be491612C233F")),
 		selectors:         selectors,
 	}
 
@@ -81,17 +126,8 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(httplog.RequestLogger(logger))
-	r.Get("/block_number", gateway.getBlockNumber)
 	r.Get("/gateway/{sender}/{data}.json", gateway.getGateway)
-	http.ListenAndServe(":3000", r)
-}
-
-func (g *Gateway) getBlockNumber(w http.ResponseWriter, r *http.Request) {
-	blockNum, err := g.l2EthClient.BlockNumber(r.Context())
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
-	}
-	w.Write([]byte(fmt.Sprintf("block_number: %d", blockNum)))
+	http.ListenAndServe(":41234", r)
 }
 
 func getoSLOForResolver(node [32]byte) []byte {
@@ -154,7 +190,7 @@ func (g *Gateway) getGateway(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	}
-	log.Printf("decoded: %+v", decoded...)
+	log.Printf("method: %s decoded: %+v", methodName, decoded)
 	slo, err := getSLO(methodName, decoded)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -164,13 +200,48 @@ func (g *Gateway) getGateway(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 	}
-	keys := []string{fmt.Sprintf("0x%s", hex.EncodeToString(slo))}
-	res, err := g.l2GethClient.GetProof(r.Context(), g.l2ResolverAddress, keys, new(big.Int).SetUint64(blockNum))
+	addressSlot := fmt.Sprintf("0x%s", hex.EncodeToString(slo))
+	res, err := g.l2GethClient.GetProof(r.Context(), g.l2ResolverAddress, []string{addressSlot}, new(big.Int).SetUint64(blockNum))
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 	}
 	log.Printf("getProof result: %+v", res)
-	w.Write([]byte(fmt.Sprintf("decoded: %+v", decoded)))
+	jsonBody, err := json.Marshal(StateRootProofInput{
+		ResolverAddr: g.l2ResolverAddress.Hex(),
+		AddrSlot:     addressSlot,
+	})
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+	bodyReader := bytes.NewReader(jsonBody)
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:41235/storage_proof", bodyReader)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("reading stateRootProof body: %s", err)
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+	stateRootProof := &StateRootProof{}
+	err = json.Unmarshal(body, stateRootProof)
+	if err != nil {
+		fmt.Printf("unmarshaling stateRootProof body: %s", err)
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+	log.Printf("stateRootProof: %+v", stateRootProof)
+
+	w.Write(body)
 }
 
 // calldata
