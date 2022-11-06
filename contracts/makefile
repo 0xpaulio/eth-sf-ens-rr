@@ -10,13 +10,15 @@ goerli-l1-init:
 	@forge script --rpc-url $(Goerli_ETH_RPC_URL__LIVE) \
 	--private-key $(PRIVATE_KEY) \
 	script/DeployL1Contracts.s.sol :ContractScript \
+	--etherscan-api-key $(ETHERSCAN_API_KEY) --verify \
 	--broadcast
 	
 goerli-l2-init:
 	@forge script --rpc-url $(Goerli_OPT_RPC_URL__LIVE) \
 	--private-key $(PRIVATE_KEY) \
 	script/DeployL2Contracts.s.sol :ContractScript \
-	--broadcast
+	--etherscan-api-key $(ETHERSCAN_API_KEY) --verify \
+	--broadcast --legacy --slow
 
 install-deps:
 	forge install transmissions11/solmate \

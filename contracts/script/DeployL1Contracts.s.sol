@@ -10,7 +10,7 @@ contract ContractScript is Script {
 
     // uint64 constant private  _optimismChainId = 10;
     uint64  _optimismChainId = 420;
-    address _l2RegistrarAddress = 0x5833395C4BDf4Bb50ac7F4868Fe922AE091D1129;
+    address _l2RegistrarAddress = 0xE933897412cc2164331e542B2a2Be491612C233F;
 
     address _goerliOVMAddressManager = 0xa6f73589243a6A7a9023b1Fa0651b1d89c177111;
 

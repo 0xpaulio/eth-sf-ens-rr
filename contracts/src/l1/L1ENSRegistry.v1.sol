@@ -225,20 +225,13 @@ contract L1ENSRegistry is
         );
     }
     
-    function ownerWithProof(bytes calldata _stateProof, bytes calldata _extraData)
+    function ownerWithProof(bytes32 _node, L2StateProof memory _proof)
         public
         view
         virtual
+        validStateRootProof(_proof)
         returns (address)
     {
-        // Decode the inputs
-        (L2StateProof memory _proof) = abi.decode(_stateProof, (L2StateProof));
-        (bytes32 _node) = abi.decode(_extraData, (bytes32));
-
-        // Validate the state proof
-        if (!verifyStateRootProof(_proof))
-            revert InvalidStateRoot();
-            
         // Calculate the SLO of the corresponding Perm
         bytes32 slot_ = keccak256(
             abi.encodePacked(
@@ -279,20 +272,13 @@ contract L1ENSRegistry is
         );
     }
     
-    function resolverWithProof(bytes calldata _stateProof, bytes calldata _extraData)
+    function resolverWithProof(bytes32 _node, L2StateProof memory _proof)
         public
         view
         virtual
+        validStateRootProof(_proof)
         returns (address)
     {
-        // Decode the inputs
-        (L2StateProof memory _proof) = abi.decode(_stateProof, (L2StateProof));
-        (bytes32 _node) = abi.decode(_extraData, (bytes32));
-
-        // Validate the state proof
-        if (!verifyStateRootProof(_proof))
-            revert InvalidStateRoot();
-
         // Calculate the SLO of the corresponding Perm
         bytes32 slot_ = keccak256(
             abi.encodePacked(
@@ -330,20 +316,13 @@ contract L1ENSRegistry is
         );
     }
     
-    function ttlWithProof(bytes calldata _stateProof, bytes calldata _extraData) 
+    function ttlWithProof(bytes32 _node, L2StateProof memory _proof) 
         public 
         view 
         virtual 
+        validStateRootProof(_proof)
         returns (uint64) 
     {
-        // Decode the inputs
-        (L2StateProof memory _proof) = abi.decode(_stateProof, (L2StateProof));
-        (bytes32 _node) = abi.decode(_extraData, (bytes32));
-
-        // Validate the state proof
-        if (!verifyStateRootProof(_proof))
-            revert InvalidStateRoot();
-
         // Calculate the SLO of the corresponding Perm
         bytes32 slot_ = keccak256(
             abi.encodePacked(
@@ -393,13 +372,14 @@ contract L1ENSRegistry is
         );
     }
      
-    function recordExistsWithProof(bytes calldata _stateProof, bytes calldata _extraData)
+    function recordExistsWithProof(bytes32 _node, L2StateProof memory _proof)
         public
         view
         virtual
+        validStateRootProof(_proof)
         returns (bool)
     {
-        return ownerWithProof(_stateProof, _extraData) != address(0);
+        return ownerWithProof(_node, _proof) != address(0);
     }
 
     /**
@@ -424,20 +404,13 @@ contract L1ENSRegistry is
         );
     }
     
-    function isApprovedForAllWithProof(bytes calldata _stateProof, bytes calldata _extraData)
+    function isApprovedForAllWithProof(address _owner, address _operator, L2StateProof memory _proof)
         external
         view
         virtual
+        validStateRootProof(_proof)
         returns (bool approved_)
     {
-        // Decode the inputs
-        (L2StateProof memory _proof) = abi.decode(_stateProof, (L2StateProof));
-        (address _owner, address _operator) = abi.decode(_extraData, (address, address));
-
-        // Validate the state proof
-        if (!verifyStateRootProof(_proof))
-            revert InvalidStateRoot();
-
         // Calculate the SLO of the corresponding Perm
         bytes32 slot_ = keccak256(
             abi.encodePacked(
