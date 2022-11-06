@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@eth-optimism/contracts": "^0.5.38",
+    "@eth-optimism/sdk": "0.0.0-2022927214235",
+    "@ethersproject/providers": "^5.7.2",
+    "@momothepug/tsmodule-alias": "^1.0.0",
+    "body-parser": "^1.20.1",
+    "dotenv": "^16.0.3",
+    "ethers": "^5.7.2",
+    "express": "^4.17.1",
+    "merkletreejs": "^0.3.0",
+    "typescript": "^4.8.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.1"
+  }
+}
