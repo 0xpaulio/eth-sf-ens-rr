@@ -8,6 +8,7 @@ import (
 )
 
 const stateProof = `
+[
     {
       "inputs": [
         {
@@ -86,7 +87,8 @@ const stateProof = `
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
-    }`
+    }
+]`
 
 var abiJSON string = `
 [

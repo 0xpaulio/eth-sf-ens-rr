@@ -18,9 +18,11 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethclient/gethclient"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
+	"github.com/go-chi/render"
 )
 
 func Must(key string) string {
@@ -59,6 +61,10 @@ type Gateway struct {
 
 type GatewayResponse struct {
 	Data string `json:"data"`
+}
+
+func (g GatewayResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
 }
 
 type GatewayResponseData struct {
@@ -243,28 +249,90 @@ func (g *Gateway) getGateway(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("stateRootProof: %+v", stateRootProof)
 
+	stateRootProof.StateTrieWitness, err = rlp.EncodeToBytes(res.AccountProof)
+	if err != nil {
+		fmt.Printf("RLP encoding failed: %s", err)
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+
+	stateRootProof.StorageTrieWitness, err = rlp.EncodeToBytes(res.StorageProof)
+	if err != nil {
+		fmt.Printf("RLP encoding failed: %s", err)
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	}
+
 	stateRootProofBytes, err := encodeProof(stateRootProof)
 	if err != nil {
 		fmt.Printf("unmarshaling stateRootProof body: %s", err)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 	}
 
-	respBytes, err := json.Marshal(
+	//respBytes, err := json.Marshal(
+	//	GatewayResponse{
+	//		Data: fmt.Sprintf("0x%s", hex.EncodeToString(stateRootProofBytes)),
+	//	},
+	//)
+	//if err != nil {
+	//	fmt.Printf("unmarshaling stateRootProof body: %s", err)
+	//	http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+	//}
+
+	render.Render(
+		w, r,
 		GatewayResponse{
 			Data: fmt.Sprintf("0x%s", hex.EncodeToString(stateRootProofBytes)),
 		},
 	)
-	if err != nil {
-		fmt.Printf("unmarshaling stateRootProof body: %s", err)
-		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
-	}
-
-	w.Write(respBytes)
+	//w.Write(respBytes)
 }
 
 func encodeProof(proofObj *StateRootProof) (resp []byte, err error) {
-	var enc = mustParseABI(stateProof)
-	return enc.Methods["helper"].Inputs.Pack(proofObj)
+	tmp := convertToContractProof(proofObj)
+
+	enc := mustParseABI(stateProof)
+	return enc.Methods["helper"].Inputs.Pack(tmp)
+}
+
+type SP struct {
+	StateRoot            [32]byte `json:"stateRoot"`
+	StateRootBatchHeader struct {
+		BatchIndex        *big.Int `json:"batchIndex"`
+		BatchRoot         [32]byte `json:"batchRoot"`
+		BatchSize         *big.Int `json:"batchSize"`
+		PrevTotalElements *big.Int `json:"prevTotalElements"`
+		ExtraData         []byte   `json:"extraData"`
+	} `json:"stateRootBatchHeader"`
+	StateRootProof struct {
+		Index    *big.Int   `json:"index"`
+		Siblings [][32]byte `json:"siblings"`
+	} `json:"stateRootProof"`
+	StateTrieWitness   []byte `json:"stateTrieWitness"`
+	StorageTrieWitness []byte `json:"storageTrieWitness"`
+}
+
+func convertToContractProof(obj *StateRootProof) (sp *SP) {
+	sp = new(SP)
+
+	copy(sp.StateRoot[:], parseHex(obj.StateRoot))
+	sp.StateRootBatchHeader.BatchIndex = big.NewInt(0).SetBytes(parseHex(obj.StateRootBatchHeader.BatchIndex.Hex))
+	copy(sp.StateRootBatchHeader.BatchRoot[:], parseHex(obj.StateRootBatchHeader.BatchRoot))
+	sp.StateRootBatchHeader.BatchSize = big.NewInt(0).SetBytes(parseHex(obj.StateRootBatchHeader.BatchSize.Hex))
+	sp.StateRootBatchHeader.PrevTotalElements = big.NewInt(0).SetBytes(parseHex(obj.StateRootBatchHeader.PrevTotalElements.Hex))
+	sp.StateRootBatchHeader.ExtraData = parseHex(obj.StateRootBatchHeader.ExtraData)
+	sp.StateRootProof.Index = big.NewInt(int64(obj.StateRootProof.Index))
+
+	sp.StateRootProof.Siblings = make([][32]byte, len(obj.StateRootProof.Siblings))
+	for index, sib := range obj.StateRootProof.Siblings {
+		copy(sp.StateRootProof.Siblings[index][:], sib.Data)
+	}
+	sp.StateTrieWitness = obj.StateTrieWitness
+	sp.StorageTrieWitness = obj.StorageTrieWitness
+	return
+}
+
+func parseHex(str string) (b []byte) {
+	b, _ = hex.DecodeString(strings.TrimPrefix("0x", str))
+	return
 }
 
 func encodeResp(proof, extraData []byte) (resp []byte, err error) {
