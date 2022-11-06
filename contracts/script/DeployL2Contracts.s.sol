@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 
 import {L2ENSRegistry} from "src/l2/L2ENSRegistry.sol";
 
-contract CounterScript is Script {
+contract ContractScript is Script {
     L2ENSRegistry l2Registry;
 
     address _owner = 0x84C970BFcD59a0e98eC6f13Cbdf24AA1a741f033;

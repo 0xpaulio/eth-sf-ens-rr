@@ -6,16 +6,21 @@ testnet-init:
 	scripts/DeployLocalTestnet.s.sol :ContractScript \
 	--broadcast -vvvv
 
-goerli-init:
-	@forge script --rpc-url $(RINKEBY_RPC_URL__LIVE) \
+goerli-l1-init:
+	@forge script --rpc-url $(Goerli_ETH_RPC_URL__LIVE) \
 	--private-key $(PRIVATE_KEY) \
-	script/Deploy.s.sol :ContractScript \
+	script/DeployL1Contracts.s.sol :ContractScript \
+	--broadcast
+	
+goerli-l2-init:
+	@forge script --rpc-url $(Goerli_OPT_RPC_URL__LIVE) \
+	--private-key $(PRIVATE_KEY) \
+	script/DeployL2Contracts.s.sol :ContractScript \
 	--broadcast
 
 install-deps:
 	forge install transmissions11/solmate \
 	OpenZeppelin/openzeppelin-contracts \
-	OpenZeppelin/openzeppelin-contracts-upgradeable \
 	ensdomains/ens \
 	ensdomains/ens-contracts \
 	ethereum-optimism/optimism \
